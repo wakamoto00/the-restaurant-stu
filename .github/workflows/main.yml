@@ -1,0 +1,314 @@
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Restaurateur | 餐旅主理人倫理模擬</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Parisienne&family=Cormorant+Garamond:ital,wght@1,500&family=Montserrat:wght@300;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --indigo-deep: #0e101a;
+            --champagne-gold: #e2d1c3;
+            --sun-gold: #fbbf24;
+            --moon-blue: #818cf8;
+            --rose: #f43f5e;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--indigo-deep);
+            color: #f0f2f5;
+            font-family: 'Montserrat', sans-serif;
+            margin: 0; padding: 0; overflow: hidden;
+            width: 100vw; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        body::before {
+            content: ""; position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            opacity: 0.04; pointer-events: none; z-index: 100;
+        }
+
+        .font-serif { font-family: 'Cormorant Garamond', serif; }
+        .font-cursive { font-family: 'Parisienne', cursive; }
+
+        .app-shell {
+            width: 92%; max-width: 400px;
+            height: 88vh; max-height: 800px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(226, 209, 195, 0.2);
+            border-radius: 3rem; backdrop-filter: blur(30px);
+            display: flex; flex-direction: column; position: relative;
+            box-shadow: 0 40px 100px -20px rgba(0,0,0,0.8); overflow: hidden;
+        }
+
+        .screen { display: none; flex-direction: column; height: 100%; padding: 2rem; width: 100%; }
+        .screen.active { display: flex; animation: fadeIn 0.6s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+        .btn-luxury {
+            background: transparent; border: 1px solid rgba(251, 191, 36, 0.4);
+            color: var(--sun-gold); padding: 1.2rem; border-radius: 2.5rem;
+            font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5em;
+            text-transform: uppercase; cursor: pointer; transition: 0.3s;
+        }
+        .btn-luxury:active { transform: scale(0.97); background: rgba(251, 191, 36, 0.1); }
+        .btn-luxury:disabled { opacity: 0.2; cursor: not-allowed; }
+
+        .btn-choice {
+            background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.2rem; border-radius: 1.5rem; text-align: left;
+            margin-bottom: 0.8rem; width: 100%; cursor: pointer; transition: 0.3s;
+        }
+        .btn-choice:active { border-color: var(--sun-gold); transform: translateX(5px); }
+
+        .input-luxury {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(226, 209, 195, 0.2);
+            border-radius: 1rem; padding: 0.8rem 1.2rem; color: white; width: 100%; margin-bottom: 1rem; outline: none;
+        }
+
+        #beam-group { transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .orb-viz { transition: transform 1s ease-in-out, opacity 0.8s; }
+        .glow-moon { filter: drop-shadow(0 0 10px var(--moon-blue)); }
+        .glow-sun { filter: drop-shadow(0 0 10px var(--sun-gold)); }
+
+        .scroll-content { overflow-y: auto; flex-grow: 1; padding-right: 4px; display: flex; flex-direction: column; }
+        .scroll-content::-webkit-scrollbar { width: 0px; }
+
+        .progress-track { height: 2px; width: 100%; background: rgba(255,255,255,0.05); margin-bottom: 1.5rem; }
+        .progress-fill { height: 100%; background: var(--champagne-gold); transition: width 0.8s; }
+
+        .review-card {
+            background: rgba(255, 255, 255, 0.03); border-radius: 1.5rem; padding: 1.2rem;
+            margin-bottom: 1rem; border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .copy-toast {
+            position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
+            background: var(--sun-gold); color: var(--indigo-deep);
+            padding: 0.5rem 1.5rem; border-radius: 2rem; font-size: 0.7rem; font-weight: bold;
+            opacity: 0; pointer-events: none; transition: 0.3s;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-shell">
+    <!-- 開始畫面 -->
+    <div id="screen-start" class="screen active justify-center items-center text-center">
+        <h2 class="text-[8px] tracking-[1em] text-white/20 uppercase font-bold mb-6">NKUHT Training</h2>
+        <h1 class="text-4xl font-cursive text-[#E2D1C3] mb-6 tracking-widest">The Restaurateur</h1>
+        
+        <div class="w-full px-6 mb-8">
+            <input type="text" id="input-class" class="input-luxury" placeholder="輸入班級 (例: 餐一甲)">
+            <input type="text" id="input-name" class="input-luxury" placeholder="輸入姓名">
+        </div>
+
+        <p class="font-serif italic text-base text-[#E2D1C3]/60 mb-10 px-4">
+            「利潤為能量，倫理為和諧。<br>主理人，請啟動天秤。」
+        </p>
+        <button id="btn-start" onclick="handleStart()" class="btn-luxury w-full">啟動經營模擬</button>
+    </div>
+
+    <!-- 遊戲畫面 -->
+    <div id="screen-play" class="screen">
+        <div class="w-full flex flex-col items-center justify-center border-b border-white/5 mb-6 pb-4">
+            <svg width="260" height="120" viewBox="0 0 300 150">
+                <defs>
+                    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="var(--moon-blue)" />
+                        <stop offset="50%" stop-color="var(--champagne-gold)" stop-opacity="0.3" />
+                        <stop offset="100%" stop-color="var(--sun-gold)" />
+                    </linearGradient>
+                </defs>
+                <g id="beam-group" transform="translate(150, 75)">
+                    <line x1="-90" y1="0" x2="90" y2="0" stroke="url(#g)" stroke-width="2" stroke-linecap="round" />
+                    <g transform="translate(-90, 0)">
+                        <line x1="0" y1="0" x2="0" y2="25" stroke="#E2D1C3" stroke-width="0.5" opacity="0.2" />
+                        <g id="moon-orb" class="orb-viz" transform="translate(0, 35)">
+                            <path d="M 5,-9 A 9,9 0 1,0 5,9 A 11,11 0 0,1 5,-9 Z" fill="var(--moon-blue)" class="glow-moon" />
+                        </g>
+                    </g>
+                    <g transform="translate(90, 0)">
+                        <line x1="0" y1="0" x2="0" y2="25" stroke="#E2D1C3" stroke-width="0.5" opacity="0.2" />
+                        <g id="sun-orb" class="orb-viz" transform="translate(0, 35)">
+                            <circle r="9" fill="var(--sun-gold)" class="glow-sun" />
+                        </g>
+                    </g>
+                </g>
+                <circle cx="150" cy="75" r="4" fill="#0e101a" stroke="#E2D1C3" stroke-width="1.2" />
+                <path d="M150 75 L150 130" stroke="#E2D1C3" stroke-width="0.5" opacity="0.2" />
+            </svg>
+            <div class="flex gap-24 text-[7px] tracking-[0.4em] font-bold text-white/10 uppercase mt-2">
+                <span>Equity</span><span>Profit</span>
+            </div>
+        </div>
+        <div class="scroll-content">
+            <div class="progress-track"><div id="ui-progress" class="progress-fill" style="width: 0%"></div></div>
+            <h3 id="ui-title" class="text-xl font-serif text-[#E2D1C3] mb-3 leading-tight"></h3>
+            <p id="ui-desc" class="text-slate-400 text-sm italic mb-8 border-l border-white/10 pl-4"></p>
+            <div id="ui-choices" class="mt-auto"></div>
+        </div>
+    </div>
+
+    <!-- 突發畫面 -->
+    <div id="screen-sudden" class="screen justify-center items-center text-center">
+        <div class="w-16 h-16 rounded-full border border-rose/30 flex items-center justify-center mb-10 text-rose shadow-[0_0_30px_rgba(244,63,94,0.15)]"><span class="text-3xl font-serif">!</span></div>
+        <h3 id="ui-sudden-title" class="text-rose font-bold text-[10px] uppercase tracking-[0.5em] mb-4">命運震盪</h3>
+        <p id="ui-sudden-desc" class="text-slate-200 text-base italic mb-10 px-6"></p>
+        <button onclick="handleSuddenClose()" class="btn-luxury w-full !text-rose !border-rose/30">面對挑戰</button>
+    </div>
+
+    <!-- 結算畫面 -->
+    <div id="screen-result" class="screen">
+        <div class="scroll-content">
+            <div class="text-center mb-6">
+                <span id="ui-user-info" class="text-[10px] text-amber-500/80 font-bold tracking-[0.2em] mb-2 block"></span>
+                <span class="text-[9px] tracking-[1em] text-white/20 uppercase font-bold">Final Analysis</span>
+                <h2 id="ui-result-title" class="text-3xl font-serif italic my-4"></h2>
+                <p id="ui-result-desc" class="text-xs text-slate-500 italic px-6"></p>
+                <div class="flex gap-2 mt-6">
+                    <button onclick="copyReport()" class="flex-1 bg-white/5 border border-white/20 rounded-full py-3 text-[10px] font-bold tracking-widest uppercase hover:bg-white/10">複製經營報告</button>
+                    <button onclick="location.reload()" class="flex-1 bg-sun-gold text-indigo-deep rounded-full py-3 text-[10px] font-bold tracking-widest uppercase">重新開始</button>
+                </div>
+            </div>
+            <div class="border-t border-white/5 pt-6">
+                <h4 class="text-[10px] font-bold text-white/30 uppercase tracking-[0.3em] mb-4">主理人倫理筆記</h4>
+                <div id="ui-review-list"></div>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="copy-toast">已複製到剪貼簿</div>
+</div>
+
+<script>
+    // --- 題庫與邏輯 ---
+    const DB = [
+        { t: "在地食材採購", d: "減少「碳足跡」，採購在地小農食材，但成本增加 15%。", k: "對環境責任 / 碳足跡", a: { l: "支持在地減碳", p: 15, e: 20 }, b: { l: "低價進口保獲利", p: 35, e: -10 } },
+        { t: "輔助設備引進", d: "廚房重物阻礙女性晉升。引進電動搬運車落實職場友善？", k: "對員工責任 / 升遷平等", a: { l: "投資設備打破歧視", p: 12, e: 25 }, b: { l: "維持人力現狀", p: 5, e: -20 } },
+        { t: "VIP 無禮言行", d: "大股東對服務生有輕浮言行。你如何展現「正義感」？", k: "五感一心：正義感", a: { l: "嚴正制止保護尊嚴", p: 10, e: 35 }, b: { l: "隱忍賠笑維護獲利", p: 55, e: -35 } },
+        { t: "產後回歸支持", d: "核心領班產後復職。是否提供「彈性排班」保障其職涯？", k: "保障員工合法權益", a: { l: "提供彈性方案", p: 15, e: 25 }, b: { l: "視同新人重新考核", p: 10, e: -25 } },
+        { t: "廢油循環處理", d: "請回收商將廢油轉化為生質燃料，或直接併入廚餘省錢？", k: "對環境責任 / 循環經濟", a: { l: "實踐循環永續", p: 20, e: 20 }, b: { l: "省錢處理法", p: 15, e: -10 } },
+        { t: "客製服務需求", d: "顧客因宗教要求特殊菜單，考驗你的「同理心」。", k: "五感一心：同理心", a: { l: "落實客製服務", p: 30, e: 20 }, b: { l: "依 SOP 婉拒需求", p: 15, e: -10 } },
+        { t: "移工晉升機會", d: "優秀外籍同仁想申請管理培訓。是否給予健全升遷機會？", k: "對員工責任 / 升遷機會", a: { l: "打破偏見拔擢人才", p: 35, e: 25 }, b: { l: "維持本土幹部制度", p: 20, e: -15 } },
+        { t: "食材誠信管理", d: "食材接近效期。為了「食品安全」銷毀，或加工促銷售出？", k: "對顧客責任 / 誠信對待", a: { l: "全數銷毀確保安全", p: 10, e: 35 }, b: { l: "加工售出降低損失", p: 45, e: -30 } },
+        { t: "生理假友善化", d: "同仁生理不適。落實「保障合法權益」允許調整職務？", k: "良好福利與權益保障", a: { l: "允許休息職務調整", p: 18, e: 25 }, b: { l: "強求站姿維護形象", p: 22, e: -20 } },
+        { t: "社會企業參與", d: "社區義賣。願意「回饋社區」與「照護弱勢」建立形象？", k: "社會責任 / B型企業精神", a: { l: "積極參與回饋社會", p: 20, e: 30 }, b: { l: "專注店內業務", p: 25, e: -5 } }
+    ];
+
+    const SUDDEN = [
+        { t: "【法規稽查】", d: "政府突擊性平檢查。若平權數值低將面臨重罰。", p: -60, e: 0 },
+        { t: "【社群爆紅】", d: "您的綠色減碳政策被推廣，訂位大爆滿，獲利暴漲。", p: 70, e: 20 }
+    ];
+
+    let state = { p: 50, e: 50, round: 0, queue: [], history: [], pending: null, userClass: "", userName: "" };
+
+    window.handleStart = () => {
+        const c = document.getElementById('input-class').value.trim();
+        const n = document.getElementById('input-name').value.trim();
+        if(!c || !n) return;
+        state.userClass = c; state.userName = n;
+        state.queue = [...DB].sort(() => Math.random() - 0.5);
+        state.round = 0; state.p = 50; state.e = 50; state.history = [];
+        showScreen('screen-play');
+        renderUI();
+    };
+
+    function renderUI() {
+        const cur = state.queue[state.round];
+        document.getElementById('ui-progress').style.width = `${(state.round + 1) * 10}%`;
+        document.getElementById('ui-title').innerText = cur.t;
+        document.getElementById('ui-desc').innerText = cur.d;
+        const box = document.getElementById('ui-choices'); box.innerHTML = '';
+        [cur.a, cur.b].forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-choice';
+            btn.innerHTML = `<span class="text-[10px] font-bold text-slate-200 tracking-widest">${opt.l}</span>`;
+            btn.onclick = () => {
+                state.history.push({ t: cur.t, choice: opt.l, k: cur.k, isEthical: idx === 0 });
+                state.p = Math.min(100, Math.max(0, state.p + opt.p));
+                state.e = Math.min(100, Math.max(0, state.e + opt.e));
+                if (state.round > 0 && Math.random() < 0.28) {
+                    state.pending = SUDDEN[Math.floor(Math.random() * SUDDEN.length)];
+                    document.getElementById('ui-sudden-title').innerText = state.pending.t;
+                    document.getElementById('ui-sudden-desc').innerText = state.pending.d;
+                    showScreen('screen-sudden');
+                } else { next(); }
+            };
+            box.appendChild(btn);
+        });
+        updateScale();
+    }
+
+    function updateScale() {
+        const total = state.p + state.e;
+        const deg = total === 0 ? 0 : (((state.p / total) * 2 - 1) * 28);
+        document.getElementById('beam-group').style.transform = `translate(150px, 75px) rotate(${deg}deg)`;
+        document.getElementById('moon-orb').style.transform = `scale(${0.8 + state.e/100})`;
+        document.getElementById('sun-orb').style.transform = `scale(${0.8 + state.p/100})`;
+    }
+
+    window.handleSuddenClose = () => {
+        state.p = Math.min(100, Math.max(0, state.p + state.pending.p));
+        state.e = Math.min(100, Math.max(0, state.e + state.pending.e));
+        next();
+    };
+
+    function next() {
+        if (state.round >= 9 || state.p <= 0 || state.e <= 0) { finish(); }
+        else { state.round++; showScreen('screen-play'); renderUI(); }
+    }
+
+    function finish() {
+        showScreen('screen-result');
+        const diff = Math.abs(state.p - state.e);
+        let title = diff <= 10 ? "傳奇主理人" : (diff <= 25 ? "卓越經營者" : "失衡的願景");
+        document.getElementById('ui-result-title').innerText = title;
+        document.getElementById('ui-result-title').style.color = diff <= 10 ? "var(--sun-gold)" : "var(--champagne-gold)";
+        document.getElementById('ui-user-info').innerText = `${state.userClass} | ${state.userName}`;
+        
+        const list = document.getElementById('ui-review-list'); list.innerHTML = '';
+        state.history.forEach((h, i) => {
+            list.innerHTML += `<div class="review-card">
+                <div class="flex justify-between mb-1"><span class="text-[8px] text-white/20">CASE ${i+1}</span><span class="text-[8px] ${h.isEthical?'text-indigo-400':'text-rose-400'} font-bold">${h.isEthical?'倫理':'獲利'}</span></div>
+                <h5 class="text-sm font-serif text-[#E2D1C3]">${h.t}</h5>
+                <p class="text-[9px] text-slate-500 mt-1">重點：${h.k}</p>
+            </div>`;
+        });
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    window.copyReport = () => {
+        const diff = Math.abs(state.p - state.e);
+        const title = diff <= 10 ? "傳奇主理人" : (diff <= 25 ? "卓越經營者" : "失衡的願景");
+        let text = `【餐飲主理人經營報告】\n`;
+        text += `班級：${state.userClass}\n姓名：${state.userName}\n`;
+        text += `最終稱號：${title}\n獲利：${state.p} | 平權：${state.e}\n`;
+        text += `--------------------------\n`;
+        state.history.forEach((h, i) => {
+            text += `Case ${i+1}: ${h.t} -> ${h.choice} (${h.isEthical?'倫理優先':'獲利優先'})\n`;
+        });
+        
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            const toast = document.getElementById('toast');
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+        } catch (err) {
+            console.error('無法複製', err);
+        }
+        document.body.removeChild(textArea);
+    };
+</script>
+</body>
+</html>
